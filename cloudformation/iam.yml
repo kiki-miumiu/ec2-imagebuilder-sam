@@ -39,3 +39,7 @@ Resources:
       Path: /
       Roles:
         - !Ref Role
+Outputs:
+  InstanceProfileName:
+    Description: "InstanceProfileName"
+    Value: !Ref InstanceProfile

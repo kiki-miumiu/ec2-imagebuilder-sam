@@ -19,10 +19,19 @@ Parameters:
     Default: Platform
   ImageRecipeVersion:
     Type: String
+    Default: "1.0.1"
+  ComponentVersion:
+    Type: String
     Default: "1.0.0"
   ParentImage:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  VPCID:
+    Type: "AWS::SSM::Parameter::Value<String>"
+    Default: "/CNS/resources/vpc_id"
+  SubnetId:
+    Type: String
+    Default: "subnet-0eba31ec4ee63df53"
 Resources:   # Add Resource here
   IAM:
     Type: AWS::CloudFormation::Stack
@@ -32,6 +41,66 @@ Resources:   # Add Resource here
         EnvironmentType: !Ref EnvironmentType
         Name: !Ref Name
         Owner: !Ref Owner
+
+  SNSTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref Name
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow https to SSM
+      VpcId: !Ref VPCID
+      SecurityGroupEgress:
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 10.0.0.0/8
+
+  ComponentAllParameters:
+    Type: 'AWS::ImageBuilder::Component'
+    Properties:
+      Name: !Ref Name
+      Platform: 'Linux'
+      Version: !Ref ComponentVersion
+      Description: 'description'
+      ChangeDescription: 'change-description'
+      # KmsKeyId: 'customer-kms-key-id'
+      SupportedOsVersions: 
+        - 'Amazon Linux 2'
+      Tags:
+        EnvironmentType: !Ref EnvironmentType
+        Owner: !Ref Owner
+      # Require one of 'Data' or 'Uri' for Component template
+      Data: |
+        name: HelloWorldTestingLinuxDoc - InlineData
+        description: This is hello world testing doc
+        schemaVersion: 1.0
+
+        phases:
+          - name: build
+            steps:
+              - name: HelloWorldStep
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - echo "Hello World! Build."
+          - name: validate
+            steps:
+              - name: HelloWorldStep
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - echo "Hello World! Validate."
+          - name: test
+            steps:
+              - name: HelloWorldStep
+                action: ExecuteBash
+                inputs:
+                  commands:
+                    - echo "Hello World! Test."
+
   ImageRecipeAllParameters:
     Type: 'AWS::ImageBuilder::ImageRecipe'
     Properties:
@@ -40,17 +109,79 @@ Resources:   # Add Resource here
       ParentImage: !Ref ParentImage
       Description: 'description'
       Components:
-        - ComponentArn: "arn:aws:imagebuilder:ap-southeast-2:aws:component/update-linux/x.x.x"
+        # - ComponentArn: "arn:aws:imagebuilder:ap-southeast-2:aws:component/update-linux/x.x.x"
+        - ComponentArn: !Ref ComponentAllParameters
       BlockDeviceMappings:
         - DeviceName: "/dev/xvda"
           VirtualName: "/dev/xvda"
           Ebs:
             DeleteOnTermination: true
-            Iops: 100
             VolumeType: "gp2"
             VolumeSize: 8
+            # Iops: 100
             # Encrypted: true
             # KmsKeyId: !Ref KmsKeyId
             # SnapshotId: "snapshot-id" # No Required
       Tags:
         EnvironmentType: !Ref EnvironmentType
+        Owner: !Ref Owner
+
+  InfrastructureConfigurationAll:
+    Type: 'AWS::ImageBuilder::InfrastructureConfiguration'
+    Properties:
+      Name: !Ref Name
+      InstanceProfileName: !GetAtt IAM.Outputs.InstanceProfileName
+      Description: 'description'
+      InstanceTypes:
+        - 't3.small'
+      SnsTopicArn: !Ref SNSTopic
+      TerminateInstanceOnFailure: true
+      SecurityGroupIds:
+        - !Ref SecurityGroup
+      SubnetId: !Ref SubnetId
+      # KeyPair: 'key-pair'
+      # Logging:
+      #   S3Logs:
+      #     S3BucketName: 'imagebuilder-logging-bucket'
+      #     S3KeyPrefix: 'imagebuilder-bucket-prefix'
+      Tags:
+        EnvironmentType: !Ref EnvironmentType
+        Owner: !Ref Owner
+
+  DistributionConfigurationAllParameters:
+    Type: 'AWS::ImageBuilder::DistributionConfiguration'
+    Properties:
+      Name: !Ref Name
+      Description: 'description'
+      Distributions:
+        - Region: 'ap-southeast-2'
+          AmiDistributionConfiguration:
+            Description: 'Default'
+            AmiTags:
+              EnvironmentType: !Ref EnvironmentType
+              Owner: !Ref Owner      
+      Tags:
+        EnvironmentType: !Ref EnvironmentType
+        Owner: !Ref Owner
+
+  ImagePipeline:
+    Type: 'AWS::ImageBuilder::ImagePipeline'
+    Properties:
+      Name: !Ref Name
+      Description: 'description'
+      Status: 'ENABLED'
+      ImageRecipeArn: !Ref ImageRecipeAllParameters
+      InfrastructureConfigurationArn: !Ref InfrastructureConfigurationAll
+      DistributionConfigurationArn: !Ref DistributionConfigurationAllParameters
+      ImageScanningConfiguration:
+        ImageScanningEnabled: true
+      ImageTestsConfiguration:
+        ImageTestsEnabled: true
+        TimeoutMinutes: 60
+      # Schedule:
+      #   ScheduleExpression: 'cron(0 0 * * ? *)'
+      #   PipelineExecutionStartCondition: 'EXPRESSION_MATCH_ONLY'
+
+      Tags:
+        EnvironmentType: !Ref EnvironmentType
+        Owner: !Ref Owner
