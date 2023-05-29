@@ -2,6 +2,10 @@
 
 This is a boilerplate repo for aws sam
 
+## Solution Overview
+
+![Enterprise SOE Solution](./doc/architecture.png)
+
 ## Deploy Local
 
 ```bash
