@@ -50,13 +50,17 @@ Resources:   # Add Resource here
   SecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow https to SSM
+      GroupDescription: Allow https to SSM and s3 prefix list
       VpcId: !Ref VPCID
       SecurityGroupEgress:
         - IpProtocol: tcp
           FromPort: 443
           ToPort: 443
           CidrIp: 10.0.0.0/8
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          DestinationPrefixListId: "pl-6ca54005"
 
   ComponentAllParameters:
     Type: 'AWS::ImageBuilder::Component'
