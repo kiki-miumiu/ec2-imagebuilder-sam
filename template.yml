@@ -40,7 +40,7 @@ Resources:   # Add Resource here
             DeleteOnTermination: true
             Encrypted: true
             Iops: 100
-            # KmsKeyId: !Ref KmsKeyId
+            KmsKeyId: !Ref KmsKeyId
             SnapshotId: "snapshot-id"
             VolumeType: "gp2"
             VolumeSize: 8
