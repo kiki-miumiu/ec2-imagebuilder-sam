@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  Name:
+    Description: Name of App
+    Type: String
+    Default: hello-world
+  EnvironmentType:
+    Description: Name of Environment Type. Example - prod, test
+    Type: String
+    Default: test
+  Owner:
+    Description: An owner's login or team
+    Type: String
+    AllowedPattern: ".+"
+    Default: Platform
+Resources:
+  Role: 
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: !Ref Name
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns: # https://docs.aws.amazon.com/imagebuilder/latest/userguide/image-builder-setting-up.html
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+        - arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilder
+        - arn:aws:iam::aws:policy/EC2InstanceProfileForImageBuilderECRContainerBuilds
+  InstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      InstanceProfileName: !Ref Name
+      Path: /
+      Roles:
+        - !Ref Role

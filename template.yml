@@ -24,6 +24,14 @@ Parameters:
     Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
     Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
 Resources:   # Add Resource here
+  IAM:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: cloudformation/iam.yml
+      Parameters:
+        EnvironmentType: !Ref EnvironmentType
+        Name: !Ref Name
+        Owner: !Ref Owner
   ImageRecipeAllParameters:
     Type: 'AWS::ImageBuilder::ImageRecipe'
     Properties:
@@ -34,15 +42,15 @@ Resources:   # Add Resource here
       Components:
         - ComponentArn: "arn:aws:imagebuilder:ap-southeast-2:aws:component/update-linux/x.x.x"
       BlockDeviceMappings:
-        - DeviceName: "device-name"
-          VirtualName: "virtual-name"
+        - DeviceName: "/dev/xvda"
+          VirtualName: "/dev/xvda"
           Ebs:
             DeleteOnTermination: true
-            Encrypted: true
             Iops: 100
-            KmsKeyId: !Ref KmsKeyId
-            SnapshotId: "snapshot-id"
             VolumeType: "gp2"
             VolumeSize: 8
+            # Encrypted: true
+            # KmsKeyId: !Ref KmsKeyId
+            # SnapshotId: "snapshot-id" # No Required
       Tags:
         EnvironmentType: !Ref EnvironmentType

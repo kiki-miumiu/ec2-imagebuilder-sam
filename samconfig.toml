@@ -1,1 +1,14 @@
 version = 0.1
+
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "hello-world-ec2-imagebuilder"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-1cvhodit3nkoz"
+s3_prefix = "hello-world-ec2-imagebuilder"
+region = "ap-southeast-2"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM CAPABILITY_NAMED_IAM"
+disable_rollback = true
+parameter_overrides = "Name=\"hello-world-ec2-imagebuilder\" EnvironmentType=\"test\" Owner=\"Platform\" ImageRecipeVersion=\"1.0.0\" ParentImage=\"/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2\""
+image_repositories = []
