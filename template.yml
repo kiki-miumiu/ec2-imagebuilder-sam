@@ -4,6 +4,10 @@ Description: >
   Sample SAM Template for
 
 Parameters:
+  Name:
+    Description: Name of App
+    Type: String
+    Default: hello-world
   EnvironmentType:
     Description: Name of Environment Type. Example - prod, test
     Type: String
@@ -13,4 +17,32 @@ Parameters:
     Type: String
     AllowedPattern: ".+"
     Default: Platform
-# Resources:   # Add Resource here
+  ImageRecipeVersion:
+    Type: String
+    Default: "1.0.0"
+  ParentImage:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+Resources:   # Add Resource here
+  ImageRecipeAllParameters:
+    Type: 'AWS::ImageBuilder::ImageRecipe'
+    Properties:
+      Name: !Ref Name
+      Version: !Ref ImageRecipeVersion
+      ParentImage: !Ref ParentImage
+      Description: 'description'
+      Components:
+        - ComponentArn: "arn:aws:imagebuilder:ap-southeast-2:aws:component/update-linux/x.x.x"
+      BlockDeviceMappings:
+        - DeviceName: "device-name"
+          VirtualName: "virtual-name"
+          Ebs:
+            DeleteOnTermination: true
+            Encrypted: true
+            Iops: 100
+            # KmsKeyId: !Ref KmsKeyId
+            SnapshotId: "snapshot-id"
+            VolumeType: "gp2"
+            VolumeSize: 8
+      Tags:
+        EnvironmentType: !Ref EnvironmentType
